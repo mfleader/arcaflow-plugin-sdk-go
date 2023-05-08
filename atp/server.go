@@ -43,7 +43,7 @@ func RunATPServer( //nolint:funlen
 		serializedSchema, err := s.SelfSerialize()
 		if err != nil {
 			goroutineError = err
-			panic(goroutineError)
+			return
 		}
 
 		// The ATP protocol uses CBOR.
@@ -58,29 +58,27 @@ func RunATPServer( //nolint:funlen
 		var empty any
 		if err := cborStdin.Decode(&empty); err != nil && !closed {
 			goroutineError = fmt.Errorf("failed to CBOR-decode start output message (%w)", err)
-			panic(goroutineError)
+			return
 		}
 
 		// Next, send the hello message, which includes the version and schema.
 		if err := cborStdout.Encode(helloMessage{1, serializedSchema}); err != nil && !closed {
 			goroutineError = fmt.Errorf("failed to CBOR-encode schema (%w)", err)
-			panic(goroutineError)
+			return
 		}
 
 		// Now, get the work message that dictates which step to run and the config info.
 		req := startWorkMessage{}
 		if err := cborStdin.Decode(&req); err != nil && !closed {
 			goroutineError = fmt.Errorf("failed to CBOR-decode start work message (%w)", err)
-			panic(goroutineError)
+			return
 		}
 		if closed { // Stop if closed.
 			return
 		}
 		outputID, outputData, err := s.Call(req.StepID, req.Config)
 		if err != nil {
-			panic(err)
-		}
-		if closed { // Stop if closed.
+			goroutineError = err
 			return
 		}
 
@@ -91,7 +89,7 @@ func RunATPServer( //nolint:funlen
 			"",
 		}); err != nil && !closed {
 			goroutineError = fmt.Errorf("failed to encode CBOR response (%w)", err)
-			panic(goroutineError)
+			return
 		}
 	}()
 
