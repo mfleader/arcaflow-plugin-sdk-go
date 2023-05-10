@@ -14,7 +14,7 @@ func (o oneOfTestObjectB) String() string {
 	return o.Message
 }
 
-type oneOfTestObjectC struct { //nolint
+type oneOfTestObjectC struct {
 	M string `json:"m"`
 }
 
